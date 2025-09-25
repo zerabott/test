@@ -8239,6 +8239,13 @@ def main():
         logger.error("Failed to run migrations, exiting")
         return
     
+    # Run automatic notification table schema fixes
+    logger.info("Running notification table schema migrations...")
+    from auto_migrate_notifications import run_startup_migrations
+    if not run_startup_migrations():
+        logger.warning("Notification table migration failed - continuing anyway")
+        # Don't exit, notification issues shouldn't prevent bot startup
+    
     # Initialize backup system
     logger.info("Starting backup system...")
     start_backup_system()

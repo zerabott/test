@@ -202,6 +202,65 @@ def auto_migrate_notification_tables():
         logger.error(f"❌ Auto-migration failed: {e}")
         return False
 
+def fix_emoji_encoding():
+    """
+    Fix emoji encoding issues in PostgreSQL database on Render.
+    Updates rank emojis to ensure proper Unicode handling.
+    """
+    db_conn = get_db_connection()
+    
+    if not db_conn.use_postgresql:
+        logger.debug("Not using PostgreSQL - emoji fix not needed")
+        return True
+    
+    logger.info("🔧 Fixing emoji encoding in database...")
+    
+    try:
+        # Define rank emojis
+        rank_data = [
+            (1, 'Freshman', '🥉'),
+            (2, 'Sophomore', '🥈'),
+            (3, 'Junior', '🥇'),
+            (4, 'Senior', '🏆'),
+            (5, 'Graduate', '🎓'),
+            (6, 'Master', '👑'),
+            (7, 'Legend', '🌟')
+        ]
+        
+        with db_conn.get_connection() as conn:
+            cursor = conn.cursor()
+            placeholder = db_conn.get_placeholder()
+            
+            # Update each rank with proper emoji
+            for rank_id, rank_name, emoji in rank_data:
+                try:
+                    cursor.execute(f"""
+                        UPDATE rank_definitions 
+                        SET rank_emoji = {placeholder}
+                        WHERE rank_id = {placeholder}
+                    """, (emoji, rank_id))
+                    
+                    logger.debug(f"Updated {rank_name}: {emoji}")
+                    
+                except Exception as e:
+                    logger.warning(f"Could not update {rank_name} emoji: {e}")
+                    continue
+            
+            conn.commit()
+            
+            # Test one emoji retrieval
+            cursor.execute("SELECT rank_emoji FROM rank_definitions WHERE rank_id = 1")
+            result = cursor.fetchone()
+            if result:
+                test_emoji = result[0]
+                logger.info(f"✅ Emoji encoding test successful: {test_emoji}")
+            
+            return True
+            
+    except Exception as e:
+        logger.error(f"❌ Failed to fix emoji encoding: {e}")
+        return False
+
 def run_startup_migrations():
     """
     Run all startup migrations. Called by the main bot initialization.
@@ -213,6 +272,11 @@ def run_startup_migrations():
         if not auto_migrate_notification_tables():
             logger.error("Notification table migration failed")
             return False
+        
+        # Fix emoji encoding issues (especially for Render PostgreSQL)
+        if not fix_emoji_encoding():
+            logger.warning("Emoji encoding fix failed - continuing anyway")
+            # Don't fail startup for emoji issues
         
         logger.info("✅ All startup migrations completed successfully")
         return True

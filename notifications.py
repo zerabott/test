@@ -30,7 +30,7 @@ class NotificationEngine:
             if db_conn.use_postgresql:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS notification_preferences (
-                        user_id SERIAL PRIMARY KEY,
+                        user_id BIGINT PRIMARY KEY,
                         comment_notifications BOOLEAN DEFAULT TRUE,
                         favorite_categories TEXT DEFAULT '',
                         daily_digest BOOLEAN DEFAULT TRUE,
@@ -61,7 +61,7 @@ class NotificationEngine:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS notification_history (
                         id SERIAL PRIMARY KEY,
-                        user_id INTEGER,
+                        user_id BIGINT,
                         notification_type TEXT NOT NULL,
                         title TEXT NOT NULL,
                         content TEXT NOT NULL,
@@ -95,7 +95,7 @@ class NotificationEngine:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS post_subscriptions (
                         id SERIAL PRIMARY KEY,
-                        user_id INTEGER,
+                        user_id BIGINT,
                         post_id INTEGER,
                         subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         active BOOLEAN DEFAULT TRUE,
